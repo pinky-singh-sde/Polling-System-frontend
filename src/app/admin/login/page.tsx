@@ -128,6 +128,7 @@ export default function AdminLoginPage() {
                     rounded-2xl
                     px-5
                     py-4
+                    text-black
                     outline-none
                     focus:border-black
                     transition
@@ -156,6 +157,7 @@ export default function AdminLoginPage() {
                     border-gray-300
                     rounded-2xl
                     px-5
+                    text-black
                     py-4
                     outline-none
                     focus:border-black
