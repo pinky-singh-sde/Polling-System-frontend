@@ -1,65 +1,175 @@
-import Image from "next/image";
+"use client";
 
-export default function Home() {
-  return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
+import { useEffect, useState } from "react";
+
+import toast from "react-hot-toast";
+
+import API from "@/services/api";
+
+import type { Nominee } from "@/types";
+
+import NomineeCard from "@/components/NomineeCard";
+
+import { getSessionId } from "@/utils/session";
+
+export default function HomePage() {
+  const [nominees, setNominees] = useState<
+    Nominee[]
+  >([]);
+
+  const [voted, setVoted] = useState(false);
+
+  const [loading, setLoading] =
+    useState(true);
+
+  // FETCH NOMINEES
+  const fetchNominees = async () => {
+    try {
+      setLoading(true);
+
+      const response = await API.get(
+        "/nominees"
+      );
+
+      setNominees(response.data);
+    } catch (error) {
+      toast.error("Failed to load nominees");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchNominees();
+
+    const alreadyVoted =
+      localStorage.getItem("voted");
+
+    if (alreadyVoted) {
+      setVoted(true);
+    }
+  }, []);
+
+  // SUBMIT VOTE
+  const handleVote = async (
+    nomineeId: string
+  ) => {
+    try {
+      const sessionId = getSessionId();
+
+      await API.post("/vote", {
+        nomineeId,
+        sessionId,
+      });
+
+      localStorage.setItem("voted", "true");
+
+      setVoted(true);
+
+      toast.success(
+        "Vote submitted successfully"
+      );
+    } catch (error: any) {
+      toast.error(
+        error.response?.data?.message ||
+          "Vote failed"
+      );
+    }
+  };
+
+  // LOADING SCREEN
+  if (loading) {
+    return (
+      <main className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="text-center">
+          <div className="w-14 h-14 border-4 border-black border-t-transparent rounded-full animate-spin mx-auto mb-5"></div>
+
+          <p className="text-lg font-medium text-gray-600">
+            Loading nominees...
           </p>
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
       </main>
-    </div>
+    );
+  }
+
+  return (
+    <main className="min-h-screen bg-gray-50">
+      {/* HERO */}
+      <section className="border-b bg-white">
+        <div className="max-w-7xl mx-auto px-5 py-20">
+          <div className="max-w-3xl">
+            <p className="text-sm font-semibold uppercase tracking-widest text-gray-500 mb-4">
+              Live Election 2026
+            </p>
+
+            <h1 className="text-5xl md:text-6xl font-black leading-tight text-gray-900">
+              Online Live Polling System
+            </h1>
+
+            <p className="text-lg text-gray-600 mt-6 leading-relaxed">
+              Vote securely for your preferred
+              nominee. Results are updated in
+              real-time for administrators.
+            </p>
+
+            <div className="flex gap-4 mt-8 flex-wrap">
+              <div className="bg-black text-white px-6 py-3 rounded-full text-sm font-semibold">
+                Real-Time Voting
+              </div>
+
+              <div className="bg-white border px-6 py-3 rounded-full text-sm font-semibold">
+                Secure Session Voting
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* VOTING SECTION */}
+      <section className="max-w-7xl mx-auto px-5 py-16">
+        <div className="flex items-center justify-between mb-10 flex-wrap gap-5">
+          <div>
+            <h2 className="text-3xl font-bold text-gray-900">
+              Election Nominees
+            </h2>
+
+            <p className="text-gray-500 mt-2">
+              Select one nominee and submit
+              your vote.
+            </p>
+          </div>
+
+          {voted && (
+            <div className="bg-green-100 text-green-700 px-5 py-3 rounded-xl font-medium">
+              You have already voted
+            </div>
+          )}
+        </div>
+
+        {/* EMPTY STATE */}
+        {nominees.length === 0 ? (
+          <div className="bg-white rounded-2xl border p-10 text-center">
+            <h3 className="text-2xl font-bold mb-3">
+              No nominees found
+            </h3>
+
+            <p className="text-gray-500">
+              Please check back later.
+            </p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8">
+            {nominees.map((nominee) => (
+              <NomineeCard
+                key={nominee._id}
+                nominee={nominee}
+                onVote={handleVote}
+                disabled={voted}
+              />
+            ))}
+          </div>
+        )}
+      </section>
+    </main>
   );
 }
